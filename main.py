@@ -9,18 +9,27 @@ from youtube_transcript_api import YouTubeTranscriptApi
 app = Flask(__name__)
 
 
+cache = {}
+
+
 @app.get("/get-youtube-transcript/<string:youtube_id>")
 async def get_youtube_transcript(youtube_id: str):
-    print(youtube_id)
     transcripts = YouTubeTranscriptApi.list_transcripts(youtube_id)
+
+    transcript_fetched = {}
+
+    if youtube_id in cache:
+        return cache.get(youtube_id)
 
     for transcript in transcripts:
         if transcript.is_generated:
-            return transcript.fetch()
+            transcript_fetched = transcript.fetch()
+            break
+    else:
+        if transcripts:
+            transcript_fetched = transcripts[0].fetch()
 
-    if transcripts:
-        return transcripts[0].fetch()
-    return {}
+    return transcript_fetched or {}
 
 
 if __name__ == '__main__':
